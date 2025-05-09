@@ -5,7 +5,6 @@ import { check } from "../middleware/auth";
 import { Company } from "../model/company";
 import { badRequest, serverError, success } from "../utils/responder";
 import { Car } from "../model/car";
-import { Order } from "../model/sale";
 import { requireObject } from "../utils/validators";
 import { Dealer } from "../model/dealer";
 
@@ -37,15 +36,15 @@ router.post("/", check, async (req: AuthRequest, res) => {
 });
 
 // Get Company and Its Cars & Orders
-router.get("/:id", check, async (req: AuthRequest, res) => {
+router.get("/:id", async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
-    const [cars, orders] = await Promise.all([
+    const [company, cars] = await Promise.all([
+      Company.findById(id),
       Car.find({ company: id }),
-      Order.find({ company: id }),
     ]);
 
-    success(res, { cars, orders });
+    success(res, { company, cars });
   } catch (error) {
     serverError(res, "Error fetching company info", error);
   }

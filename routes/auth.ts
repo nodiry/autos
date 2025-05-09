@@ -19,7 +19,6 @@ import logger from "../middleware/logger";
 import { Dealer } from "../model/dealer";
 import { Car } from "../model/car";
 import { Company } from "../model/company";
-import { Review } from "../model/review";
 const router = express.Router();
 
 //  Signin
@@ -298,12 +297,13 @@ router.delete(
       if (validateMatch(username, req.user?.username, res)) return;
 
       const user = await Dealer.findOne({ username });
-      if (!user) return;
-      if (requireUser(user, res)) return;
+      if (!user) {
+        res.status(404).json({ message: "User not found" });
+        return;
+      }
       await Promise.all([
         Company.findByIdAndDelete(user.company),
         Car.deleteMany({ company: user.company }),
-        Review.deleteMany({ company: user.company }),
         Dealer.deleteOne({ username }),
       ]);
       res.clearCookie("Authorization", {

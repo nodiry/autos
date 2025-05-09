@@ -6,7 +6,6 @@ import { check } from "../middleware/auth";
 import type { AuthRequest } from "../type";
 import { User } from "../model/user";
 import { requireObject } from "../utils/validators";
-import { Review } from "../model/review";
 import { existsSync, unlinkSync, writeFileSync } from "fs";
 import { join } from "path";
 import multer from "multer";
@@ -32,8 +31,7 @@ router.get("/cars/:id", async (req, res) => {
     const car = await Car.findById(id);
     if (!car) return badRequest(res, "Car not found");
 
-    const reviews = await Review.find({ car: id });
-    success(res, { car, reviews });
+    success(res, { car });
   } catch (error) {
     serverError(res, "Error while fetching car and reviews", error);
   }
@@ -55,8 +53,8 @@ router.get("/favorite", check, async (req: AuthRequest, res) => {
     const user = await User.findById(req.user?.id);
     if (!user) return badRequest(res, "User not found");
 
-    const favorites = await Car.find({ _id: { $in: user.favorites } });
-    success(res, { favorites });
+    const cars = await Car.find({ _id: { $in: user.favorites } });
+    success(res, { cars });
   } catch (error) {
     serverError(res, "Error while fetching favorite cars", error);
   }
@@ -81,9 +79,9 @@ router.post("/favorite", check, async (req: AuthRequest, res) => {
 });
 
 // Remove a car from favorites
-router.delete("/favorite/:id", check, async (req: AuthRequest, res) => {
+router.delete("/favorite", check, async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.body;
 
     const user = await User.findByIdAndUpdate(
       req.user?.id,
@@ -104,15 +102,13 @@ router.delete("/favorite/:id", check, async (req: AuthRequest, res) => {
 // Submit a review for a car
 router.post("/review", check, async (req: AuthRequest, res) => {
   try {
-    const { text, company, car, rating } = req.body;
+    const { text, car, rating } = req.body;
 
-    const review = await Review.create({
-      text,
-      company,
+    const review = await Car.findByIdAndUpdate(
       car,
-      user: req.user?.id,
-      rating,
-    });
+      { review: { text, rating, user: req.user?.id, date: new Date() } },
+      { new: true }
+    );
 
     success(res, { review });
   } catch (error) {
