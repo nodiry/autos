@@ -100,6 +100,24 @@ router.get("/me", check, async (req: AuthRequest, res) => {
     serverError(res, "error happened while fetching user details", error);
   }
 });
+//
+router.post("/user", check, async (req: AuthRequest, res) => {
+  try {
+    const { buyerid, dealerid } = req.body;
+    const [user, dealer] = await Promise.all([
+      User.findById(buyerid).select("-password"),
+      Dealer.findById(dealerid).select("-password"),
+    ]);
+    success(res, { user, dealer });
+  } catch (error) {
+    logger.error("error happened while fetching user and dealer names");
+    serverError(
+      res,
+      "error happened while  fetching user and dealer names",
+      error
+    );
+  }
+});
 
 router.put("/me", check, async (req: AuthRequest, res): Promise<void> => {
   try {
