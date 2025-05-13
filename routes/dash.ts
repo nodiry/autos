@@ -9,6 +9,7 @@ import { requireObject } from "../utils/validators";
 import { existsSync, unlinkSync, writeFileSync } from "fs";
 import { join } from "path";
 import multer from "multer";
+import { Company } from "../model/company";
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
@@ -165,6 +166,53 @@ router.delete("/image", check, async (req: AuthRequest, res): Promise<void> => {
   } catch (err) {
     console.error("Delete error:", err);
     res.status(500).send("Error deleting image");
+  }
+});
+const regionCoordinates = {
+  Tashkent: { lat: 41.3111, lng: 69.2797 },
+  Andijan: { lat: 40.7821, lng: 72.3442 },
+  Fergana: { lat: 40.3734, lng: 71.7978 },
+  Namangan: { lat: 40.9983, lng: 71.6726 },
+  Samarkand: { lat: 39.6542, lng: 66.9597 },
+  Bukhara: { lat: 39.7684, lng: 64.455 },
+  Khorezm: { lat: 41.55, lng: 60.6333 },
+  Kashkadarya: { lat: 38.862, lng: 66.2186 },
+  Surkhandarya: { lat: 37.94, lng: 67.57 },
+  Jizzakh: { lat: 40.125, lng: 67.88 },
+  Sirdaryo: { lat: 40.8386, lng: 68.66 },
+  Navoi: { lat: 40.0844, lng: 65.3792 },
+  Karakalpakstan: { lat: 43.7686, lng: 59.0212 },
+};
+
+router.get("/map", async (req, res) => {
+  try {
+    const companies = await Company.aggregate([
+      {
+        $group: {
+          _id: "$region",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const dealers = companies
+      .filter((entry) => entry._id) // skip entries with null region
+      .map((entry) => {
+        const region = entry._id;
+        const coords = regionCoordinates[region] || { lat: 0, lng: 0 };
+        return {
+          region,
+          count: entry.count,
+          lat: coords.lat,
+          lng: coords.lng,
+        };
+      })
+      .sort((a, b) => b.count - a.count); // optional: sort by count descending
+
+    res.status(200).json({ dealers });
+  } catch (err) {
+    console.error("Map route error:", err);
+    res.status(500).json({ error: "Failed to fetch regional dealer data" });
   }
 });
 
