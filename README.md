@@ -1,15 +1,3 @@
-# new
+this is a Backend server for Dream Auto new cars sales web platform
 
-To install dependencies:
-
-```bash
-bun install
-```
-
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.2.9. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+it uses Express and TS, Bun runtime instead of Nodejs, and other usual things like jwt and mongoose with mongodb
