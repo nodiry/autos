@@ -14,6 +14,10 @@ import chat from "./routes/chat";
 import config from "./config/config";
 import logger from "./middleware/logger";
 import path from "path";
+import { createServer } from "http";
+import { Server } from "socket.io";
+import { addUser, findUser, removeUser } from "./middleware/cache";
+import { Message } from "./model/message";
 
 const app = express();
 const port = process.env.PORT || 3033;
@@ -46,11 +50,6 @@ app.use("/sales", sale);
 app.use("/chat", chat);
 app.use("/org", org);
 
-import { createServer } from "http";
-import { Server } from "socket.io";
-import { addUser, findUser, removeUser } from "./middleware/cache";
-import { Message } from "./model/message";
-
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
@@ -81,16 +80,16 @@ chatNamespace.on("connection", (socket) => {
     // Try to emit to the receiver
     try {
       const receiverSocketId = await findUser(receiver);
-      if (receiverSocketId) {
+      if (receiverSocketId) 
         chatNamespace.to(receiverSocketId).emit("receive", msg);
-      }
+      
     } catch (err) {
       console.error("Error delivering message:", err);
     }
   });
 
   socket.on("disconnect", async () => {
-    console.log(`User ${userId} disconnected`);
+    logger.info(`User ${userId} disconnected`);
     await removeUser(userId);
   });
 });

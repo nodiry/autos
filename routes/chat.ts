@@ -156,11 +156,10 @@ router.post("/", async (req: AuthRequest, res) => {
   }
 });
 
-router.get("/:carId/:dealer", check, async (req: AuthRequest, res) => {
-  const { carId, dealer } = req.params;
+router.get("/:carId", check, async (req: AuthRequest, res) => {
+  const { carId } = req.params;
   try {
     if (requireField(carId, res, "car id is needed")) return;
-    if (requireField(dealer, res, "dealer id is needed")) return;
     const messages = await Message.find({
       car: carId,
     });
