@@ -3,10 +3,12 @@ import express from "express";
 import type { AuthRequest } from "../type";
 import { serverError, success } from "../utils/responder";
 import { Car } from "../model/car";
+import { Message } from "../model/message";
+import { check } from "../middleware/auth";
+import { requireField } from "../utils/validators";
 
 const router = express.Router();
 
-// Options to include in the prompt
 const specOptions = {
   makes: [
     "Toyota",
@@ -65,7 +67,6 @@ const specOptions = {
   engineCylinders: ["2", "3", "4", "6", "8", "12"],
 };
 
-// Gemini-compatible prompt constructor
 const buildPrompt = (userPrompt: string) => {
   return `You are a car expert. Based on the user prompt below, pick appropriate car specifications from the available options.
 
@@ -92,7 +93,6 @@ Return a JSON with this shape:
     "engineSize": string[],
     "engineCylinders": string[]
   },
-  "message": "Explanation of why these specs were chosen."
 }`;
 };
 
@@ -130,7 +130,6 @@ const callGemini = async (prompt: string) => {
   }
 };
 
-// AI search route
 router.post("/", async (req: AuthRequest, res) => {
   try {
     const { prompt } = req.body;
@@ -154,6 +153,20 @@ router.post("/", async (req: AuthRequest, res) => {
   } catch (error) {
     console.error("AI Search Error:", error);
     serverError(res, "Failed to process AI search.");
+  }
+});
+
+router.get("/:carId/:dealer", check, async (req: AuthRequest, res) => {
+  const { carId, dealer } = req.params;
+  try {
+    if (requireField(carId, res, "car id is needed")) return;
+    if (requireField(dealer, res, "dealer id is needed")) return;
+    const messages = await Message.find({
+      car: carId,
+    });
+    success(res, messages);
+  } catch (error) {
+    serverError(res, "error happened while fetching messages", error);
   }
 });
 
