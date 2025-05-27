@@ -249,7 +249,7 @@ router.post("/dealer/signup", async (req, res): Promise<void> => {
   }
 });
 
-router.get("/dealer/me", check, async (req: AuthRequest, res) => {
+router.get("/dealer", check, async (req: AuthRequest, res) => {
   try {
     const user = Dealer.findById(req.user?.id).select("-password");
     if (requireUser(user, res)) return;
@@ -260,52 +260,46 @@ router.get("/dealer/me", check, async (req: AuthRequest, res) => {
   }
 });
 
-router.put(
-  "/dealer/me",
-  check,
-  async (req: AuthRequest, res): Promise<void> => {
-    try {
-      const {
-        username,
-        firstname,
-        lastname,
-        age,
-        address,
-        phone,
-        email,
-        passportId,
-        password,
-      } = req.body;
-      if (requireUsername(req.user?.username, res)) return;
-      if (validateMatch(username, req.user?.username, res)) return;
+router.put("/dealer", check, async (req: AuthRequest, res): Promise<void> => {
+  try {
+    const {
+      id,
+      firstname,
+      lastname,
+      age,
+      address,
+      phone,
+      email,
+      passportId,
+      password,
+    } = req.body;
+    if (validateMatch(id, req.user?.id, res)) return;
 
-      let user = await Dealer.findOne({ username });
-      if (!user) return;
-      if (requireUser(user, res)) return;
+    let user = await Dealer.findById(id);
+    if (!user || requireUser(user, res)) return;
 
-      const hashed = password ? await hash(password) : user.password;
-      // update fields if they are provided
-      if (email) user.email = email;
-      if (lastname) user.lastname = lastname;
-      if (firstname) user.firstname = firstname;
-      if (age) user.age = age;
-      if (address) user.address = address;
-      if (phone) user.phone = phone;
-      if (passportId) user.passportId = passportId;
+    const hashed = password ? await hash(password) : user.password;
+    // update fields if they are provided
+    if (email) user.email = email;
+    if (lastname) user.lastname = lastname;
+    if (firstname) user.firstname = firstname;
+    if (age) user.age = age;
+    if (address) user.address = address;
+    if (phone) user.phone = phone;
+    if (passportId) user.passportId = passportId;
 
-      user.password = hashed;
-      await user.save();
-      user.password = "";
+    user.password = hashed;
+    await user.save();
+    user.password = "";
 
-      success(res, { user });
-    } catch (error) {
-      serverError(res, "Error happened while updating user: " + error);
-    }
+    success(res, { user });
+  } catch (error) {
+    serverError(res, "Error happened while updating user: " + error);
   }
-);
+});
 
 router.delete(
-  "/dealer/me",
+  "/dealer",
   check,
   async (req: AuthRequest, res): Promise<void> => {
     try {

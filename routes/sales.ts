@@ -4,6 +4,8 @@ import type { AuthRequest } from "../type";
 import { check } from "../middleware/auth";
 import { badRequest, serverError, success } from "../utils/responder";
 import { Car } from "../model/car";
+import { Message } from "../model/message";
+import { Company } from "../model/company";
 
 const router = express.Router();
 
@@ -13,10 +15,14 @@ router.post("/status", check, async (req: AuthRequest, res) => {
     const { carid, status, companyid } = req.body;
     let car = await Car.findById(carid);
 
-    if (!car || car.company.toString() !== companyid) {
+    if (!car || car.company.toString() !== companyid)
       return badRequest(res, "Not authorized to update this order");
+    if (status == "cancelled") {
+      await Message.deleteMany({
+        car: carid,
+        $or: [{ receiver: car.buyer }, { sender: car.buyer }],
+      });
     }
-
     if (status) car.status = status;
     car.saleDate = new Date();
     await car.save();
@@ -78,6 +84,21 @@ router.post("/checkout", check, async (req: AuthRequest, res) => {
     success(res, { car });
   } catch (error) {
     serverError(res, "Error while placing order", error);
+  }
+});
+router.delete("/", check, async (req: AuthRequest, res) => {
+  try {
+    const { carid, companyid } = req.body;
+
+    const company = await Company.findById(companyid);
+    if (!company || !company.dealers.includes(req.user?.id)) {
+      return badRequest(res, "Not allowed");
+    }
+
+    await Car.findByIdAndDelete(carid);
+    success(res, { message: "Car deleted successfully" });
+  } catch (error) {
+    serverError(res, "Error while deleting car", error);
   }
 });
 

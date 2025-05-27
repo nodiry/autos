@@ -160,9 +160,12 @@ router.get("/:carId", check, async (req: AuthRequest, res) => {
   const { carId } = req.params;
   try {
     if (requireField(carId, res, "car id is needed")) return;
+
     const messages = await Message.find({
       car: carId,
+      $or: [{ sender: req.user?.id }, { receiver: req.user?.id }],
     });
+
     success(res, messages);
   } catch (error) {
     serverError(res, "error happened while fetching messages", error);

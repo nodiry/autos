@@ -10,6 +10,7 @@ import { existsSync, unlinkSync, writeFileSync } from "fs";
 import { join } from "path";
 import multer from "multer";
 import { Company } from "../model/company";
+import { Dealer } from "../model/dealer";
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
@@ -31,8 +32,12 @@ router.get("/cars/:id", async (req, res) => {
     const { id } = req.params;
     const car = await Car.findById(id);
     if (!car) return badRequest(res, "Car not found");
-
-    success(res, { car });
+    const [company, cars, dealer] = await Promise.all([
+      Company.findById(car.company),
+      Car.find({ company: id }),
+      Dealer.findById(car.dealer).select("-password"),
+    ]);
+    success(res, { car, company, cars, dealer });
   } catch (error) {
     serverError(res, "Error while fetching car and reviews", error);
   }
